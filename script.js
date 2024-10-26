@@ -1,7 +1,8 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const joystick = document.getElementById('joystick');
-let joystickCenter = { x: 75, y: 75 };  // Centro do joystick-container
+const joystickContainer = document.querySelector('.joystick-container');
+const containerRadius = 75;  // Limite circular para o joystick
 canvas.width = 400;
 canvas.height = 400;
 
@@ -69,22 +70,24 @@ function update() {
 }
 
 function updateDirectionFromJoystick(event) {
-    let touch = event.touches ? event.touches[0] : event;
-    let dx = touch.clientX - joystickCenter.x;
-    let dy = touch.clientY - joystickCenter.y;
-    let distance = Math.sqrt(dx * dx + dy * dy);
-    let maxDistance = 40;
+    const touch = event.touches ? event.touches[0] : event;
+    let dx = touch.clientX - (joystickContainer.offsetLeft + joystickContainer.offsetWidth / 2);
+    let dy = touch.clientY - (joystickContainer.offsetTop + joystickContainer.offsetHeight / 2);
 
-    if (distance > maxDistance) {
-        dx = (dx / distance) * maxDistance;
-        dy = (dy / distance) * maxDistance;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Restringe o movimento do joystick ao raio do container
+    if (distance > containerRadius) {
+        dx = (dx / distance) * containerRadius;
+        dy = (dy / distance) * containerRadius;
     }
 
     joystick.style.transform = `translate(${dx}px, ${dy}px)`;
 
+    // Aumenta a sensibilidade do movimento
     direction = {
-        x: Math.round(dx / maxDistance) * cellSize,
-        y: Math.round(dy / maxDistance) * cellSize
+        x: Math.round(dx / containerRadius) * cellSize,
+        y: Math.round(dy / containerRadius) * cellSize
     };
 }
 
@@ -103,4 +106,4 @@ document.addEventListener('mousemove', (event) => {
 });
 document.addEventListener('mouseup', resetJoystick);
 
-setInterval(update, 100);
+setInterval(update, 150);
