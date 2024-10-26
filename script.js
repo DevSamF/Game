@@ -1,6 +1,7 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-
+const joystick = document.getElementById('joystick');
+let joystickCenter = { x: 75, y: 75 };  // Centro do joystick-container
 canvas.width = 400;
 canvas.height = 400;
 
@@ -39,16 +40,15 @@ function drawFood() {
 }
 
 function checkCollision() {
-    // Verifica se a cabeça da cobra saiu dos limites da tela
     if (snake[0].x < 0) {
-        snake[0].x = canvas.width - cellSize; // Reaparece no lado direito
+        snake[0].x = canvas.width - cellSize;
     } else if (snake[0].x >= canvas.width) {
-        snake[0].x = 0; // Reaparece no lado esquerdo
+        snake[0].x = 0;
     }
     if (snake[0].y < 0) {
-        snake[0].y = canvas.height - cellSize; // Reaparece na parte inferior
+        snake[0].y = canvas.height - cellSize;
     } else if (snake[0].y >= canvas.height) {
-        snake[0].y = 0; // Reaparece na parte superior
+        snake[0].y = 0;
     }
 }
 
@@ -68,27 +68,39 @@ function update() {
     document.title = `Score: ${score}`;
 }
 
-function changeDirection(newDirection) {
-    if (!(direction.x === -newDirection.x && direction.y === -newDirection.y)) {
-        direction = newDirection;
+function updateDirectionFromJoystick(event) {
+    let touch = event.touches ? event.touches[0] : event;
+    let dx = touch.clientX - joystickCenter.x;
+    let dy = touch.clientY - joystickCenter.y;
+    let distance = Math.sqrt(dx * dx + dy * dy);
+    let maxDistance = 40;
+
+    if (distance > maxDistance) {
+        dx = (dx / distance) * maxDistance;
+        dy = (dy / distance) * maxDistance;
     }
+
+    joystick.style.transform = `translate(${dx}px, ${dy}px)`;
+
+    direction = {
+        x: Math.round(dx / maxDistance) * cellSize,
+        y: Math.round(dy / maxDistance) * cellSize
+    };
 }
 
-document.addEventListener('keydown', event => {
-    const keyDirectionMap = {
-        ArrowUp: { x: 0, y: -cellSize },
-        ArrowDown: { x: 0, y: cellSize },
-        ArrowLeft: { x: -cellSize, y: 0 },
-        ArrowRight: { x: cellSize, y: 0 }
-    };
-    if (keyDirectionMap[event.key]) {
-        changeDirection(keyDirectionMap[event.key]);
-    }
-});
+function resetJoystick() {
+    joystick.style.transform = `translate(0, 0)`;
+    direction = { x: 0, y: 0 };
+}
 
-document.getElementById('up').addEventListener('click', () => changeDirection({ x: 0, y: -cellSize }));
-document.getElementById('down').addEventListener('click', () => changeDirection({ x: 0, y: cellSize }));
-document.getElementById('left').addEventListener('click', () => changeDirection({ x: -cellSize, y: 0 }));
-document.getElementById('right').addEventListener('click', () => changeDirection({ x: cellSize, y: 0 }));
+joystick.addEventListener('touchstart', updateDirectionFromJoystick);
+joystick.addEventListener('touchmove', updateDirectionFromJoystick);
+joystick.addEventListener('touchend', resetJoystick);
+
+joystick.addEventListener('mousedown', updateDirectionFromJoystick);
+document.addEventListener('mousemove', (event) => {
+    if (event.buttons === 1) updateDirectionFromJoystick(event);
+});
+document.addEventListener('mouseup', resetJoystick);
 
 setInterval(update, 100);

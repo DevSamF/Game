@@ -33,31 +33,22 @@ canvas {
     background-color: #000;
 }
 
-.controls {
+.joystick-container {
     margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px; /* Espaço entre os botões verticais */
+    width: 150px;
+    height: 150px;
+    position: relative;
 }
 
-.horizontal-controls {
-    display: flex;
-    gap: 40px; /* Espaço maior entre os botões esquerdo e direito */
-}
-
-button {
-    width: 70px;
-    height: 70px;
-    font-size: 24px;
+#joystick {
+    width: 80px;
+    height: 80px;
     background-color: #444;
-    color: white;
-    border: none;
-    border-radius: 10px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 35px;
+    left: 35px;
     cursor: pointer;
-    outline: none;
-}
-
-button:active {
-    background-color: #666;
+    transition: transform 0.1s ease;
 }
