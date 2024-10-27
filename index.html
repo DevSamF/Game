@@ -1,21 +1,213 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Jogo da Cobrinha</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+    <style>
+        body {
+            background-color: #191a19;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        canvas {
+            background-color: black;
+            display: block;
+        }
+    </style>
+    <title>SnakeGame</title>
 </head>
 <body>
-    <div class="game-container">
-        <canvas id="gameCanvas"></canvas>
-    </div>
-    
-    <!-- Contêiner para o joystick -->
-    <div class="joystick-container">
-        <div id="joystick"></div>
-    </div>
+    <canvas id="campo"></canvas>
+    <script type="text/javascript">
+        window.onload = function() {
+            var scorx = 0;
+            var campo = document.getElementById('campo');
+            var ctx = campo.getContext("2d");
 
-    <script src="script.js"></script>
+            function resizeCanvas() {
+                var larguraTela = window.innerWidth;
+                var alturaTela = window.innerHeight;
+
+                if (larguraTela < 640 || alturaTela < 480) {
+                    campo.width = 350;
+                    campo.height = 350;
+                    scorx = 200;
+                } else {
+                    campo.width = 600;
+                    campo.height = 600;
+                    scorx = 300;
+                }
+
+                // Recalcular a quantidade de tiles com base no novo tamanho do canvas
+                const tp = 30; // Tamanho do tile
+                const qp = Math.floor(campo.width / tp); // Quantidade de tiles
+                return { tp, qp };
+            }
+
+            const { tp, qp } = resizeCanvas();
+            window.addEventListener('resize', () => {
+                const { tp, qp } = resizeCanvas();
+                game(); // Atualizar o jogo com o novo tamanho do canvas
+            });
+
+            document.addEventListener("touchstart", touchStart);
+            document.addEventListener("keydown", keyPush);
+
+            const vel = 1;
+            const intervalo = 135; // Ajuste a velocidade aqui
+            var vx = vy = 0; // Velocidade
+            var px = 10; // Posição X do jogador
+            var py = 15; // Posição Y do jogador
+            var score = 0; // Pontuação
+            var ax = Math.floor(Math.random() * (qp - 1)); // Posição da maçã inicial
+            var ay = Math.floor(Math.random() * (qp - 1));
+
+            var trilha = []; // Rastro da cobra
+            var peca = 5; // Comprimento inicial da cobra
+
+            const espacoEntreQuadrados = 5; // Espaço entre os quadrados da cobra
+            const tamanhoMaça = tp - 4; // Aumenta o tamanho da maçã
+
+            setInterval(game, intervalo); // Chama a função game no intervalo definido
+
+            function roundRect(x, y, width, height, radius) {
+                ctx.beginPath();
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + width - radius, y);
+                ctx.arc(x + width - radius, y + radius, radius, -Math.PI / 2, 0);
+                ctx.lineTo(x + width, y + height - radius);
+                ctx.arc(x + width - radius, y + height - radius, radius, 0, Math.PI / 2);
+                ctx.lineTo(x + radius, y + height);
+                ctx.arc(x + radius, y + height - radius, radius, Math.PI / 2, Math.PI);
+                ctx.lineTo(x, y + radius);
+                ctx.arc(x + radius, y + radius, radius, Math.PI, -Math.PI / 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function game() {
+                // Atualizar posição do jogador
+                px += vx;
+                py += vy;
+
+                // Voltar ao outro lado da tela
+                if (px < 0) px = qp - 1;
+                if (px > qp - 1) px = 0;
+                if (py < 0) py = qp - 1;
+                if (py > qp - 1) py = 0;
+
+                // Limpar canvas
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, campo.width, campo.height);
+
+                // Desenhar maçã
+                ctx.fillStyle = "red";
+                roundRect(ax * tp, ay * tp, tamanhoMaça, tamanhoMaça, tp / 4); // Desenhar a maçã
+
+                // Desenhar cobra
+                for (var i = 0; i < trilha.length; i++) {
+                    let size = tp - espacoEntreQuadrados; // Tamanho dos quadrados da cobra
+
+                    if (i === trilha.length - 1) {
+                        // Cabeça com olhos (mesmo tamanho)
+                        ctx.fillStyle = "#004712";
+                        roundRect(trilha[i].x * tp + espacoEntreQuadrados / 2, trilha[i].y * tp + espacoEntreQuadrados / 2, size, size, tp / 4);
+
+                        // Desenhar olhos
+                        ctx.fillStyle = "black";
+                        var eyeOffsetX = (vx === 0 ? 0 : (vx > 0 ? 10 : -10));
+                        var eyeOffsetY = (vy === 0 ? 0 : (vy > 0 ? 10 : -10));
+                        ctx.beginPath();
+                        // Olho esquerdo
+                        ctx.arc(trilha[i].x * tp + tp / 4 - eyeOffsetX, trilha[i].y * tp + tp / 4 - eyeOffsetY, 3, 0, 2 * Math.PI);
+                        // Olho direito
+                        ctx.arc(trilha[i].x * tp + tp / 4 + eyeOffsetX, trilha[i].y * tp + tp / 4 - eyeOffsetY, 3, 0, 2 * Math.PI);
+                        ctx.fill();
+                    } else {
+                        ctx.fillStyle = "#004712";
+                        roundRect(trilha[i].x * tp + espacoEntreQuadrados / 2, trilha[i].y * tp + espacoEntreQuadrados / 2, size, size, tp / 4);
+                    }
+
+                    // Verificar colisão com a própria cobra
+                    if (trilha[i].x == px && trilha[i].y == py) {
+                        vx = vy = 0;
+                        peca = 5;
+                        score = 0;
+                    }
+                }
+
+                // Adicionar posição atual ao rastro
+                trilha.push({x: px, y: py});
+
+                // Remover segmentos excessivos da cauda
+                while (trilha.length > peca) {
+                    trilha.shift();
+                }
+
+                // Verificar colisão com a maçã
+                if (ax == px && ay == py) {
+                    score++;
+                    peca++;
+                    ax = Math.floor(Math.random() * (qp - 1));
+                    ay = Math.floor(Math.random() * (qp - 1));
+                }
+
+                // Exibir pontuação
+                ctx.fillStyle = '#676b68';
+                ctx.font = '60px sans-serif';
+                ctx.fillText(score, scorx, scorx);
+            }
+            
+            function keyPush(event) {
+                switch(event.keyCode) {
+                    case 37: // Esquerda
+                        vx = -vel;
+                        vy = 0;
+                        break;
+                    case 38: // Cima
+                        vx = 0;
+                        vy = -vel;
+                        break;
+                    case 39: // Direita
+                        vx = vel;
+                        vy = 0;
+                        break;
+                    case 40: // Baixo
+                        vx = 0;
+                        vy = vel;
+                        break;
+                }
+            }
+
+            function touchStart(event) {
+                var touch = event.touches[0];
+                var touchX = touch.pageX;
+                var touchY = touch.pageY;
+
+                // Ajusta para o tamanho do canvas
+                var canvasRect = campo.getBoundingClientRect();
+                var scaledTouchX = touchX - canvasRect.left;
+                var scaledTouchY = touchY - canvasRect.top;
+
+                if (scaledTouchX < campo.width / 2 && scaledTouchY < campo.height / 2) {
+                    vx = -vel; // Esquerda
+                    vy = 0;
+                } else if (scaledTouchX < campo.width / 2 && scaledTouchY > campo.height / 2) {
+                    vx = 0; // Cima
+                    vy = -vel;
+                } else if (scaledTouchX > campo.width / 2 && scaledTouchY < campo.height / 2) {
+                    vx = vel; // Direita
+                    vy = 0;
+                } else if (scaledTouchX > campo.width / 2 && scaledTouchY > campo.height / 2) {
+                    vx = 0; // Baixo
+                    vy = vel;
+                }
+            }
+        }
+    </script>
 </body>
 </html>
