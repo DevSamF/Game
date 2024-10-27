@@ -20,8 +20,12 @@
         }
         .controls {
             display: flex;
-            justify-content: center;
+            flex-direction: column; /* Botões em coluna */
+            align-items: center;
             margin-top: 20px;
+        }
+        .horizontal {
+            display: flex; /* Para os botões da linha horizontal */
         }
         button {
             background-color: #676b68;
@@ -43,9 +47,11 @@
     <canvas id="campo"></canvas>
     <div class="controls">
         <button id="up">Cima</button>
-        <button id="left">Esquerda</button>
         <button id="down">Baixo</button>
-        <button id="right">Direita</button>
+        <div class="horizontal">
+            <button id="left">Esquerda</button>
+            <button id="right">Direita</button>
+        </div>
     </div>
     <script type="text/javascript">
         window.onload = function() {
@@ -219,7 +225,7 @@
                 }
             }
 
-            // Adiciona eventos de clique aos botões
+            // Adicionando eventos para os botões de controle
             document.getElementById('up').addEventListener('click', () => {
                 vx = 0;
                 vy = -vel; // Mover para cima
