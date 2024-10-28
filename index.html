@@ -1,251 +1,261 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-    <style>
-        body {
-            background-color: #191a19;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-            height: 100vh;
-            overflow: hidden;
-        }
-        canvas {
-            background-color: black;
-            display: block;
-        }
-        .controls {
-            display: flex;
-            flex-direction: column; /* Botões em coluna */
-            align-items: center;
-            margin-top: 20px;
-        }
-        .horizontal {
-            display: flex; /* Para os botões da linha horizontal */
-        }
-        button {
-            background-color: #676b68;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            margin: 5px;
-            font-size: 20px;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        button:hover {
-            background-color: #5a5c5a;
-        }
-    </style>
-    <title>SnakeGame</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+	<style>
+		body {
+			background-color: #47f988;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			margin: 0;
+			height: 100vh;
+			overflow: hidden;
+		}
+
+		canvas {
+			background-color: rgb(0, 0, 0);
+			display: block;
+		}
+
+		.controls {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			margin-top: 20px;
+		}
+
+		.button-wrapper {
+			display: grid;
+			grid-template-columns: 60px 60px 60px;
+			/* Definindo três colunas */
+			grid-template-rows: 60px 60px 60px;
+			/* Definindo três linhas */
+			gap: 10px;
+			/* Espaço entre os botões */
+			justify-items: center;
+			align-items: center;
+		}
+
+		#up {
+			grid-column: 2;
+			grid-row: 1;
+		}
+
+		#left {
+			grid-column: 1;
+			grid-row: 2;
+		}
+
+		#right {
+			grid-column: 3;
+			grid-row: 2;
+		}
+
+		#down {
+			grid-column: 2;
+			grid-row: 3;
+		}
+
+		button {
+			background-color: #676a6b;
+			color: white;
+			border: none;
+			padding: 10px 15px;
+			font-size: 20px;
+			cursor: pointer;
+			border-radius: 5px;
+		}
+
+		button:hover {
+			background-color: #5a5c5a;
+		}
+	</style>
+	<title>SnakeGame</title>
 </head>
+
 <body>
-    <canvas id="campo"></canvas>
-    <div class="controls">
-        <button id="up">Cima</button>
-        <button id="down">Baixo</button>
-        <div class="horizontal">
-            <button id="left">Esquerda</button>
-            <button id="right">Direita</button>
-        </div>
-    </div>
-    <script type="text/javascript">
-        window.onload = function() {
-            var scorx = 0;
-            var campo = document.getElementById('campo');
-            var ctx = campo.getContext("2d");
+	<canvas id="campo"></canvas>
+	<div class="controls">
+		<div class="button-wrapper">
+			<button id="up">Cima</button>
+			<button id="left">Esquerda</button>
+			<button id="right">Direita</button>
+			<button id="down">Baixo</button>
+		</div>
+	</div>
 
-            function resizeCanvas() {
-                var larguraTela = window.innerWidth;
-                var alturaTela = window.innerHeight;
+	<script type="text/javascript">
+		window.onload = function () {
+			var scorx = 0;
+			var campo = document.getElementById('campo');
+			var ctx = campo.getContext("2d");
 
-                if (larguraTela < 640 || alturaTela < 480) {
-                    campo.width = 350;
-                    campo.height = 350;
-                    scorx = 200;
-                } else {
-                    campo.width = 600;
-                    campo.height = 600;
-                    scorx = 300;
-                }
+			const imgCobra = new Image();
+			imgCobra.src = 'logo.png'; // Substitua pelo caminho da imagem da cabeça da cobra
 
-                const tp = 30; // Tamanho do tile
-                const qp = Math.floor(campo.width / tp); // Quantidade de tiles
-                return { tp, qp };
-            }
+			function resizeCanvas() {
+				var larguraTela = window.innerWidth;
+				var alturaTela = window.innerHeight;
 
-            const { tp, qp } = resizeCanvas();
-            window.addEventListener('resize', () => {
-                const { tp, qp } = resizeCanvas();
-                game(); // Atualizar o jogo com o novo tamanho do canvas
-            });
+				if (larguraTela < 640 || alturaTela < 480) {
+					campo.width = 350;
+					campo.height = 350;
+					scorx = 200;
+				} else {
+					campo.width = 500;
+					campo.height = 500;
+					scorx = 300;
+				}
 
-            document.addEventListener("touchstart", touchStart);
-            document.addEventListener("keydown", keyPush);
+				const tp = 30; // Tamanho do tile
+				const qp = Math.floor(campo.width / tp); // Quantidade de tiles
+				return { tp, qp };
+			}
 
-            const vel = 1;
-            const intervalo = 135; // Ajuste a velocidade aqui
-            var vx = vy = 0; // Velocidade
-            var px = 10; // Posição X do jogador
-            var py = 15; // Posição Y do jogador
-            var score = 0; // Pontuação
-            var ax = Math.floor(Math.random() * (qp - 1)); // Posição da maçã inicial
-            var ay = Math.floor(Math.random() * (qp - 1));
+			const { tp, qp } = resizeCanvas();
+			window.addEventListener('resize', () => {
+				const { tp, qp } = resizeCanvas();
+				game();
+			});
 
-            var trilha = []; // Rastro da cobra
-            var peca = 5; // Comprimento inicial da cobra
+			document.addEventListener("touchstart", touchStart);
+			document.addEventListener("keydown", keyPush);
 
-            const espacoEntreQuadrados = 5; // Espaço entre os quadrados da cobra
-            const tamanhoMaça = tp - 4; // Aumenta o tamanho da maçã
+			const vel = 1;
+			const intervalo = 145;
+			var vx = vy = 0;
+			var px = 10;
+			var py = 15;
+			var score = 0;
+			var ax = Math.floor(Math.random() * (qp - 1));
+			var ay = Math.floor(Math.random() * (qp - 1));
 
-            setInterval(game, intervalo); // Chama a função game no intervalo definido
+			var trilha = [];
+			var peca = 5;
 
-            function roundRect(x, y, width, height, radius) {
-                ctx.beginPath();
-                ctx.moveTo(x + radius, y);
-                ctx.lineTo(x + width - radius, y);
-                ctx.arc(x + width - radius, y + radius, radius, -Math.PI / 2, 0);
-                ctx.lineTo(x + width, y + height - radius);
-                ctx.arc(x + width - radius, y + height - radius, radius, 0, Math.PI / 2);
-                ctx.lineTo(x + radius, y + height);
-                ctx.arc(x + radius, y + height - radius, radius, Math.PI / 2, Math.PI);
-                ctx.lineTo(x, y + radius);
-                ctx.arc(x + radius, y + radius, radius, Math.PI, -Math.PI / 2);
-                ctx.closePath();
-                ctx.fill();
-            }
+			const espacoEntreQuadrados = 5;
+			const tamanhoMaça = tp - 4;
 
-            function game() {
-                px += vx;
-                py += vy;
+			setInterval(game, intervalo);
 
-                if (px < 0) px = qp - 1;
-                if (px > qp - 1) px = 0;
-                if (py < 0) py = qp - 1;
-                if (py > qp - 1) py = 0;
+			function roundRect(x, y, width, height, radius) {
+				ctx.beginPath();
+				ctx.moveTo(x + radius, y);
+				ctx.lineTo(x + width - radius, y);
+				ctx.arc(x + width - radius, y + radius, radius, -Math.PI / 2, 0);
+				ctx.lineTo(x + width, y + height - radius);
+				ctx.arc(x + width - radius, y + height - radius, radius, 0, Math.PI / 2);
+				ctx.lineTo(x + radius, y + height);
+				ctx.arc(x + radius, y + height - radius, radius, Math.PI / 2, Math.PI);
+				ctx.lineTo(x, y + radius);
+				ctx.arc(x + radius, y + radius, radius, Math.PI, -Math.PI / 2);
+				ctx.closePath();
+				ctx.fill();
+			}
 
-                ctx.fillStyle = "black";
-                ctx.fillRect(0, 0, campo.width, campo.height);
+			function game() {
+				px += vx;
+				py += vy;
 
-                ctx.fillStyle = "red";
-                roundRect(ax * tp, ay * tp, tamanhoMaça, tamanhoMaça, tp / 4); // Desenhar a maçã
+				if (px < 0) px = qp - 1;
+				if (px > qp - 1) px = 0;
+				if (py < 0) py = qp - 1;
+				if (py > qp - 1) py = 0;
 
-                for (var i = 0; i < trilha.length; i++) {
-                    let size = tp - espacoEntreQuadrados; // Tamanho dos quadrados da cobra
+				ctx.fillStyle = "black";
+				ctx.fillRect(0, 0, campo.width, campo.height);
 
-                    if (i === trilha.length - 1) {
-                        ctx.fillStyle = "#004712";
-                        roundRect(trilha[i].x * tp + espacoEntreQuadrados / 2, trilha[i].y * tp + espacoEntreQuadrados / 2, size, size, tp / 4);
+				ctx.fillStyle = "red";
+				roundRect(ax * tp, ay * tp, tamanhoMaça, tamanhoMaça, tp / 4);
 
-                        // Desenhar olhos
-                        ctx.fillStyle = "black";
-                        var eyeOffsetX = (vx === 0 ? 0 : (vx > 0 ? 10 : -10));
-                        var eyeOffsetY = (vy === 0 ? 0 : (vy > 0 ? 10 : -10));
-                        ctx.beginPath();
-                        ctx.arc(trilha[i].x * tp + tp / 4 - eyeOffsetX, trilha[i].y * tp + tp / 4 - eyeOffsetY, 3, 0, 2 * Math.PI);
-                        ctx.arc(trilha[i].x * tp + tp / 4 + eyeOffsetX, trilha[i].y * tp + tp / 4 - eyeOffsetY, 3, 0, 2 * Math.PI);
-                        ctx.fill();
-                    } else {
-                        ctx.fillStyle = "#004712";
-                        roundRect(trilha[i].x * tp + espacoEntreQuadrados / 2, trilha[i].y * tp + espacoEntreQuadrados / 2, size, size, tp / 4);
-                    }
+				for (var i = 0; i < trilha.length; i++) {
+					let size = tp - espacoEntreQuadrados;
 
-                    // Verificar colisão com a própria cobra
-                    if (trilha[i].x == px && trilha[i].y == py) {
-                        vx = vy = 0;
-                        peca = 5;
-                        score = 0;
-                    }
-                }
+					if (i === trilha.length - 1) {
+						if (imgCobra.complete) {
+							ctx.drawImage(imgCobra, trilha[i].x * tp, trilha[i].y * tp, tp, tp);
+						} else {
+							ctx.fillStyle = "#004712";
+							roundRect(trilha[i].x * tp + espacoEntreQuadrados / 2, trilha[i].y * tp + espacoEntreQuadrados / 2, size, size, tp / 4);
+						}
+					} else {
+						ctx.fillStyle = "#004712";
+						roundRect(trilha[i].x * tp + espacoEntreQuadrados / 2, trilha[i].y * tp + espacoEntreQuadrados / 2, size, size, tp / 4);
+					}
+				}
 
-                trilha.push({x: px, y: py});
+				trilha.push({ x: px, y: py });
+				while (trilha.length > peca) {
+					trilha.shift();
+				}
 
-                while (trilha.length > peca) {
-                    trilha.shift();
-                }
+				if (ax == px && ay == py) {
+					score++;
+					peca++;
+					ax = Math.floor(Math.random() * (qp - 1));
+					ay = Math.floor(Math.random() * (qp - 1));
+				}
 
-                if (ax == px && ay == py) {
-                    score++;
-                    peca++;
-                    ax = Math.floor(Math.random() * (qp - 1));
-                    ay = Math.floor(Math.random() * (qp - 1));
-                }
+				ctx.fillStyle = '#676b68';
+				ctx.font = '60px sans-serif';
+				ctx.fillText(score, scorx, scorx);
+			}
 
-                ctx.fillStyle = '#676b68';
-                ctx.font = '60px sans-serif';
-                ctx.fillText(score, scorx, scorx);
-            }
-            
-            function keyPush(event) {
-                switch(event.keyCode) {
-                    case 37: // Esquerda
-                        vx = -vel;
-                        vy = 0;
-                        break;
-                    case 38: // Cima
-                        vx = 0;
-                        vy = -vel;
-                        break;
-                    case 39: // Direita
-                        vx = vel;
-                        vy = 0;
-                        break;
-                    case 40: // Baixo
-                        vx = 0;
-                        vy = vel;
-                        break;
-                }
-            }
+			function keyPush(event) {
+				switch (event.keyCode) {
+					case 37:
+						vx = -vel;
+						vy = 0;
+						break;
+					case 38:
+						vx = 0;
+						vy = -vel;
+						break;
+					case 39:
+						vx = vel;
+						vy = 0;
+						break;
+					case 40:
+						vx = 0;
+						vy = vel;
+						break;
+				}
+			}
 
-            function touchStart(event) {
-                var touch = event.touches[0];
-                var touchX = touch.pageX;
-                var touchY = touch.pageY;
+			function touchStart(event) {
+				var touch = event.touches[0];
+				var touchX = touch.pageX;
+				var touchY = touch.pageY;
 
-                var canvasRect = campo.getBoundingClientRect();
-                var scaledTouchX = touchX - canvasRect.left;
-                var scaledTouchY = touchY - canvasRect.top;
+				var canvasRect = campo.getBoundingClientRect();
+				var scaledTouchX = touchX - canvasRect.left;
+				var scaledTouchY = touchY - canvasRect.top;
 
-                if (scaledTouchX < campo.width / 2 && scaledTouchY < campo.height / 2) {
-                    vx = -vel; // Esquerda
-                    vy = 0;
-                } else if (scaledTouchX < campo.width / 2 && scaledTouchY > campo.height / 2) {
-                    vx = 0; // Cima
-                    vy = -vel;
-                } else if (scaledTouchX > campo.width / 2 && scaledTouchY < campo.height / 2) {
-                    vx = vel; // Direita
-                    vy = 0;
-                } else if (scaledTouchX > campo.width / 2 && scaledTouchY > campo.height / 2) {
-                    vx = 0; // Baixo
-                    vy = vel;
-                }
-            }
+				if (scaledTouchX < campo.width / 2 && scaledTouchY < campo.height / 2) {
+					vx = -vel;
+					vy = 0;
+				} else if (scaledTouchX < campo.width / 2 && scaledTouchY > campo.height / 2) {
+					vx = 0;
+					vy = -vel;
+				} else if (scaledTouchX > campo.width / 2 && scaledTouchY < campo.height / 2) {
+					vx = vel;
+					vy = 0;
+				} else if (scaledTouchX > campo.width / 2 && scaledTouchY > campo.height / 2) {
+					vx = 0;
+					vy = vel;
+				}
+			}
 
-            // Adicionando eventos para os botões de controle
-            document.getElementById('up').addEventListener('click', () => {
-                vx = 0;
-                vy = -vel; // Mover para cima
-            });
-
-            document.getElementById('down').addEventListener('click', () => {
-                vx = 0;
-                vy = vel; // Mover para baixo
-            });
-
-            document.getElementById('left').addEventListener('click', () => {
-                vx = -vel; // Mover para esquerda
-                vy = 0;
-            });
-
-            document.getElementById('right').addEventListener('click', () => {
-                vx = vel; // Mover para direita
-                vy = 0;
-            });
-        }
-    </script>
+			document.getElementById('up').addEventListener('click', () => { vx = 0; vy = -vel; });
+			document.getElementById('down').addEventListener('click', () => { vx = 0; vy = vel; });
+			document.getElementById('left').addEventListener('click', () => { vx = -vel; vy = 0; });
+			document.getElementById('right').addEventListener('click', () => { vx = vel; vy = 0; });
+		}
+	</script>
 </body>
+
 </html>
