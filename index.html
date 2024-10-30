@@ -17,6 +17,7 @@
 		}
 
 		canvas {
+			margin-top: 50px;
 			background-color: rgb(0, 0, 0);
 			display: block;
 		}
@@ -93,55 +94,59 @@
 			var scorx = 0;
 			var campo = document.getElementById('campo');
 			var ctx = campo.getContext("2d");
-
+	
 			const imgCobra = new Image();
-			imgCobra.src = 'logo.png'; // Substitua pelo caminho da imagem da cabeça da cobra
-
+			imgCobra.src = 'logo.png';
+	
 			function resizeCanvas() {
 				var larguraTela = window.innerWidth;
 				var alturaTela = window.innerHeight;
-
-				if (larguraTela < 640 || alturaTela < 480) {
-					campo.width = 350;
-					campo.height = 350;
-					scorx = 200;
+				var menorLado = Math.min(larguraTela, alturaTela);
+	
+				if (menorLado < 450) {
+					campo.width = menorLado - 20;
+					campo.height = menorLado - 20;
+					scorx = campo.width / 2;
 				} else {
-					campo.width = 500;
-					campo.height = 500;
+					campo.width = 600;
+					campo.height = 600;
 					scorx = 300;
 				}
-
-				const tp = 30; // Tamanho do tile
-				const qp = Math.floor(campo.width / tp); // Quantidade de tiles
+	
+				const tp = 30;
+				const qp = Math.floor(campo.width / tp);
 				return { tp, qp };
 			}
-
+	
 			const { tp, qp } = resizeCanvas();
 			window.addEventListener('resize', () => {
 				const { tp, qp } = resizeCanvas();
 				game();
 			});
-
+	
 			document.addEventListener("touchstart", touchStart);
 			document.addEventListener("keydown", keyPush);
-
+	
 			const vel = 1;
-			const intervalo = 145;
+			const fps = 60; // Novo FPS desejado
+			const framesPerMove = 6; // Quantos frames até a cobra mover uma unidade
+			var frameCounter = 0;
+	
 			var vx = vy = 0;
 			var px = 10;
 			var py = 15;
 			var score = 0;
 			var ax = Math.floor(Math.random() * (qp - 1));
 			var ay = Math.floor(Math.random() * (qp - 1));
-
+	
 			var trilha = [];
 			var peca = 5;
-
+	
 			const espacoEntreQuadrados = 5;
 			const tamanhoMaça = tp - 4;
-
-			setInterval(game, intervalo);
-
+	
+			setInterval(game, 1000 / fps);
+	
 			function roundRect(x, y, width, height, radius) {
 				ctx.beginPath();
 				ctx.moveTo(x + radius, y);
@@ -156,25 +161,33 @@
 				ctx.closePath();
 				ctx.fill();
 			}
-
+	
 			function game() {
-				px += vx;
-				py += vy;
-
-				if (px < 0) px = qp - 1;
-				if (px > qp - 1) px = 0;
-				if (py < 0) py = qp - 1;
-				if (py > qp - 1) py = 0;
-
+				frameCounter++;
+				if (frameCounter % framesPerMove === 0) { // Movimenta a cobra a cada 6 frames
+					px += vx;
+					py += vy;
+	
+					if (px < 0) px = qp - 1;
+					if (px > qp - 1) px = 0;
+					if (py < 0) py = qp - 1;
+					if (py > qp - 1) py = 0;
+	
+					trilha.push({ x: px, y: py });
+					while (trilha.length > peca) {
+						trilha.shift();
+					}
+				}
+	
 				ctx.fillStyle = "black";
 				ctx.fillRect(0, 0, campo.width, campo.height);
-
+	
 				ctx.fillStyle = "red";
 				roundRect(ax * tp, ay * tp, tamanhoMaça, tamanhoMaça, tp / 4);
-
+	
 				for (var i = 0; i < trilha.length; i++) {
 					let size = tp - espacoEntreQuadrados;
-
+	
 					if (i === trilha.length - 1) {
 						if (imgCobra.complete) {
 							ctx.drawImage(imgCobra, trilha[i].x * tp, trilha[i].y * tp, tp, tp);
@@ -187,24 +200,19 @@
 						roundRect(trilha[i].x * tp + espacoEntreQuadrados / 2, trilha[i].y * tp + espacoEntreQuadrados / 2, size, size, tp / 4);
 					}
 				}
-
-				trilha.push({ x: px, y: py });
-				while (trilha.length > peca) {
-					trilha.shift();
-				}
-
+	
 				if (ax == px && ay == py) {
 					score++;
 					peca++;
 					ax = Math.floor(Math.random() * (qp - 1));
 					ay = Math.floor(Math.random() * (qp - 1));
 				}
-
+	
 				ctx.fillStyle = '#676b68';
 				ctx.font = '60px sans-serif';
 				ctx.fillText(score, scorx, scorx);
 			}
-
+	
 			function keyPush(event) {
 				switch (event.keyCode) {
 					case 37:
@@ -225,16 +233,16 @@
 						break;
 				}
 			}
-
+	
 			function touchStart(event) {
 				var touch = event.touches[0];
 				var touchX = touch.pageX;
 				var touchY = touch.pageY;
-
+	
 				var canvasRect = campo.getBoundingClientRect();
 				var scaledTouchX = touchX - canvasRect.left;
 				var scaledTouchY = touchY - canvasRect.top;
-
+	
 				if (scaledTouchX < campo.width / 2 && scaledTouchY < campo.height / 2) {
 					vx = -vel;
 					vy = 0;
@@ -249,13 +257,14 @@
 					vy = vel;
 				}
 			}
-
+	
 			document.getElementById('up').addEventListener('click', () => { vx = 0; vy = -vel; });
 			document.getElementById('down').addEventListener('click', () => { vx = 0; vy = vel; });
 			document.getElementById('left').addEventListener('click', () => { vx = -vel; vy = 0; });
 			document.getElementById('right').addEventListener('click', () => { vx = vel; vy = 0; });
 		}
 	</script>
+	
 </body>
 
 </html>
